@@ -1,1 +1,1 @@
-puts "This is a test."
+puts 'This is a test.'
