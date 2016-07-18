@@ -1,0 +1,11 @@
+Assign one integer to the first variable and another integer to the second variable.
+Add the two variables together.
+Print the sum.
+
+Assign an array of strings to a variable.
+Add together all of the positions of the array into one new integer.
+Print the new integer.
+
+Assign an array of integers to a variable.
+Iterate over the integers, returning only those in an index where index%2==0
+Create and print a new array with only the returned values.
