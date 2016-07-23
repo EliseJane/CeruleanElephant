@@ -15,7 +15,7 @@ end
 # rubocop:disable Metrics/AbcSize
 def display_board(brd)
   system 'clear'
-  puts "You are #{PLAYER_MARKER}. Computer is #{COMPUTER_MARKER}."
+  prompt "You are #{PLAYER_MARKER}. Computer is #{COMPUTER_MARKER}."
   puts ""
   puts "     |     |"
   puts "  #{brd[1]}  |  #{brd[2]}  |  #{brd[3]}"
@@ -132,7 +132,7 @@ loop do
       other_player = 'Computer'
       break
     when 'Choose'
-      puts "Who is going first? Player or Computer?"
+      prompt "Who is going first? Player or Computer?"
       FIRST_PLAYER = gets.chomp.downcase.capitalize
     end
   end
