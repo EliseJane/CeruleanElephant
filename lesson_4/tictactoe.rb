@@ -6,7 +6,6 @@ COMPUTER_MARKER = 'O'.freeze
 WINNING_LINES = [[1, 2, 3], [4, 5, 6], [7, 8, 9],
                  [1, 4, 7], [2, 5, 8], [3, 6, 9],
                  [1, 5, 9], [3, 5, 7]].freeze
-FIRST_PLAYER = 'Choose' # rubocop:disable Style/MutableConstant
 
 def prompt(msg)
   puts "=> #{msg}"
@@ -62,22 +61,22 @@ def computer_marks_square!(brd)
     break if square
   end
 
-  if square.nil?
+  if !square
     WINNING_LINES.each do |line|
       square = win_or_block(line, brd, PLAYER_MARKER)
       break if square
     end
   end
 
-  square = 5 if brd[5] == INITIAL_MARKER && square.nil?
-  square = empty_squares(brd).sample if square.nil?
+  square = 5 if brd[5] == INITIAL_MARKER && !square
+  square = empty_squares(brd).sample if !square
   brd[square] = COMPUTER_MARKER
 end
 # rubocop:enable Metrics/CyclomaticComplexity
 
-def win_or_block(ln, brd, mrkr)
-  if brd.values_at(*ln).count(mrkr) == 2
-    brd.select { |k, v| ln.include?(k) && v == INITIAL_MARKER }.keys.first
+def win_or_block(line, brd, marker)
+  if brd.values_at(*line).count(marker) == 2
+    brd.select { |k, v| line.include?(k) && v == INITIAL_MARKER }.keys.first
   end
 end
 
@@ -105,10 +104,10 @@ def joinor(arr, div= ', ')
   arr.size == 2 ? arr.join(' ') : arr.join(div)
 end
 
-def mark_square!(brd, plyr)
-  if plyr == 'Player'
+def mark_square!(brd, player)
+  if player == 'Player'
     player_marks_square!(brd)
-  elsif plyr == 'Computer'
+  elsif player == 'Computer'
     computer_marks_square!(brd)
   end
 end
@@ -120,21 +119,20 @@ loop do
   board = initialize_board
   current_player = ''
   other_player = ''
-  # determine first player based on value of constant
+
   loop do
-    case FIRST_PLAYER
-    when 'Computer'
-      current_player = 'Computer'
-      other_player = 'Player'
-      break
-    when 'Player'
+    prompt "Who is going first? Player or Computer?"
+    first_player = gets.chomp.downcase.capitalize
+    if first_player == 'Player'
       current_player = 'Player'
       other_player = 'Computer'
-      break
-    when 'Choose'
-      prompt "Who is going first? Player or Computer?"
-      FIRST_PLAYER = gets.chomp.downcase.capitalize
+    elsif first_player == 'Computer'
+      current_player = 'Computer'
+      other_player = 'Player'
+    else
+      prompt "Invalid response. Try again."
     end
+    break unless current_player == ''
   end
 
   loop do
