@@ -1,16 +1,13 @@
+# still doesn't puts "Blackjack!"
+
 require 'pry'
 
 SUITS = ["of hearts", "of spades", "of diamonds", "of clubs"].freeze
 VALUES = [2, 3, 4, 5, 6, 7, 8, 9, 10, "Jack", "Queen", "King", "Ace"].freeze
+LIMIT = 21
 
 def initialize_deck
-  new_deck = Array.new
-  SUITS.each do |suit|
-    VALUES.each do |value|
-      new_deck.push([value, suit])
-    end
-  end
-  new_deck.shuffle!
+  VALUES.product(SUITS).shuffle
 end
 
 def deal(deck)
@@ -28,20 +25,26 @@ def calculate_total(hand)
   total = 0
   values = hand.map { |card| card[0] }
   values.each do |value|
-    if value == "Ace"
-      total += 1
-      total += 10 unless total >= 12
-    elsif value == "Jack" || value == "Queen" || value == "King"
-      total += 10
-    else
-      total += value.to_i
-    end
+    total += if value == "Ace"
+               11
+             elsif value == "Jack" || value == "Queen" || value == "King"
+               10
+             else
+               value.to_i
+             end
+  end
+  values.select { |value| value == "Ace" }.count.times do
+    total -= 10 if total > LIMIT
   end
   total
 end
 
 def busted?(total)
-  total > 21
+  total > LIMIT
+end
+
+def blackjack?(total, hand)
+  total == LIMIT && hand.count == 2
 end
 
 def table(player, dealer)
@@ -51,32 +54,21 @@ def table(player, dealer)
 end
 
 def find_winner(player, dealer)
-  return 'Player' if player <= 21 && (player > dealer || busted?(dealer))
+  return 'Player' if player <= LIMIT && (player > dealer || busted?(dealer))
 
-  return 'Dealer' if dealer <= 21 && (dealer > player || busted?(player))
+  return 'Dealer' if dealer <= LIMIT && (dealer > player || busted?(player))
 
-  return 'Everybody' if player == dealer && player <= 21
+  return 'Everybody' if player == dealer && player <= LIMIT
 
-  return 'Nobody' if player > 21 && dealer > 21
+  return 'Nobody' if player > LIMIT && dealer > LIMIT
 end
 
-def display_stats(phand, dhand, ptotal, dtotal, winner)
-  system 'clear'
-  puts "Your hand: #{phand}"
-  puts "Dealer's hand: #{dhand}"
-
-  puts "21!" if ptotal == 21 || dtotal == 21
-
-  puts "Push!" if ptotal == dtotal
-
-  puts "Bust!" if ptotal > 21 || dtotal > 21
-
-  puts "#{winner} wins!"
-end
+deck = initialize_deck
+player_score = 0
+dealer_score = 0
 
 loop do
-  # set up
-  deck = initialize_deck
+  # deal
   player_hand = deal(deck)
   dealer_hand = deal(deck)
   player_total = 0
@@ -87,40 +79,71 @@ loop do
     table(player_hand, dealer_hand)
 
     player_total = calculate_total(player_hand)
-    break if player_total == 21
-
     dealer_total = calculate_total(dealer_hand)
-    break if dealer_total == 21
 
-    break if busted?(player_total)
+    break if blackjack?(dealer_total, dealer_hand) ||
+             blackjack?(player_total, player_hand)
 
-    puts "Hit or stay? (h or s)"
-    decision = gets.chomp
-    break unless decision.downcase.start_with?("h")
+    decision = nil
+    loop do
+      puts "Hit or stay? (h or s)"
+      decision = gets.chomp.downcase
+      break if decision == 'h' || decision == 's' ||
+               decision == "hit" || decision == "stay"
+      puts "Please enter 'h' for hit or 's' for stay."
+    end
+    break if decision == 's' || decision == "stay" || busted?(player_total)
+
     hit(player_hand, deck)
   end
 
   # dealer turn
   loop do
-    break if busted?(dealer_total)
+    dealer_total = calculate_total(dealer_hand)
+    break if dealer_total >= (LIMIT - 4)
 
-    while dealer_total < 17
-      hit(dealer_hand, deck)
-      table(player_hand, dealer_hand)
-      dealer_total = calculate_total(dealer_hand)
-    end
-
-    break
+    hit(dealer_hand, deck)
+    table(player_hand, dealer_hand)
   end
 
   # find and display winner
   winner = find_winner(player_total, dealer_total)
-  display_stats(player_hand, dealer_hand, player_total, dealer_total, winner)
+
+  # keep score
+  if winner == 'Player'
+    player_score += 1
+  elsif winner == 'Dealer'
+    dealer_score += 1
+  end
+
+  # display stats
+  system 'clear'
+  puts "Your hand: #{player_hand}"
+  puts "Dealer's hand: #{dealer_hand}"
+  puts "Blackjack!" if blackjack?(dealer_total, dealer_hand) ||
+                       blackjack?(player_total, player_hand)
+
+  puts "#{LIMIT}!" if player_total == LIMIT || dealer_total == LIMIT
+  puts "Push!" if player_total == dealer_total
+  puts "Bust!" if player_total > LIMIT || dealer_total > LIMIT
+
+  puts "#{winner} wins!"
+  puts "Player's score is #{player_score}. Dealer's score is #{dealer_score}."
+
+  break if player_score == 5 || dealer_score == 5
 
   # play again?
-  puts "Do you want to play again?"
-  answer = gets.chomp
-  break unless answer.downcase.start_with?("y")
+  answer = nil
+  loop do
+    puts "Do you want to play again (y or n)?"
+    answer = gets.chomp.downcase
+    break if answer == 'y' || answer == 'n' || answer == "yes" || answer == "no"
+    puts "Please enter 'y' for yes or 'n' for no."
+  end
+  break if answer == 'n' || answer == "no"
+
+  # reshuffle deck when low
+  deck = initialize_deck if deck.count < 10
 end
 
 puts "Good bye!"
