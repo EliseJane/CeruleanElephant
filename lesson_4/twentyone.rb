@@ -1,5 +1,3 @@
-# still doesn't puts "Blackjack!"
-
 require 'pry'
 
 SUITS = ["of hearts", "of spades", "of diamonds", "of clubs"].freeze
@@ -54,13 +52,13 @@ def table(player, dealer)
 end
 
 def find_winner(player, dealer)
-  return 'Player' if player <= LIMIT && (player > dealer || busted?(dealer))
-
-  return 'Dealer' if dealer <= LIMIT && (dealer > player || busted?(player))
-
-  return 'Everybody' if player == dealer && player <= LIMIT
-
-  return 'Nobody' if player > LIMIT && dealer > LIMIT
+  if !busted?(player) && (player > dealer || busted?(dealer))
+    return 'Player'
+  elsif !busted?(dealer) && (dealer > player || busted?(player))
+    return 'Dealer'
+  else
+    return 'Nobody'
+  end
 end
 
 deck = initialize_deck
@@ -82,7 +80,7 @@ loop do
     dealer_total = calculate_total(dealer_hand)
 
     break if blackjack?(dealer_total, dealer_hand) ||
-             blackjack?(player_total, player_hand)
+             blackjack?(player_total, player_hand) || busted?(player_total)
 
     decision = nil
     loop do
@@ -92,8 +90,7 @@ loop do
                decision == "hit" || decision == "stay"
       puts "Please enter 'h' for hit or 's' for stay."
     end
-    break if decision == 's' || decision == "stay" || busted?(player_total)
-
+    break if decision == 's' || decision == "stay"
     hit(player_hand, deck)
   end
 
