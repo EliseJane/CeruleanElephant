@@ -17,21 +17,17 @@ class Participant
 
   def hit(deck)
     hand << Card.new(deck.deal)
-    find_aces
+    assign_aces
     display_cards
   end
 
-  def find_aces
+  def assign_aces
     aces = hand.select { |card| card.face.include?('Ace') }
-    aces.each { |card| card.value = determine_ace }
+    aces.each { |card| card.value = determine_value }
   end
 
-  def determine_ace
-    if busted?
-      return 1
-    else
-      return 11
-    end
+  def determine_value
+    busted? ? 1 : 11
   end
 
   def stay
@@ -116,7 +112,6 @@ class Dealer < Participant
   end
 
   def turn(deck)
-    @break_toggle = 0
     loop do
       if total >= 17
         stay
@@ -146,6 +141,10 @@ class Deck
 
   def deal
     @remaining_cards.shift
+  end
+
+  def size
+    remaining_cards.size
   end
 end
 
@@ -182,21 +181,7 @@ class Game
     welcome_message
     ask_player_name
     select_dealer_name
-    loop do # same participants, can renew deck
-      deck = Deck.new
-      until deck.remaining_cards.size < 10 # deals hands until deck is low
-        deal_cards(deck)
-        player.display_cards
-        dealer.display_cards
-        player.turn(deck)
-        dealer.turn(deck) unless player.busted?
-        dealer.display_all_cards
-        determine_result
-        show_result
-        discard
-      end
-      break unless reshuffle?
-    end
+    play_rounds
     goodbye_message
   end
 
@@ -241,32 +226,49 @@ class Game
     puts ""
   end
 
+  def play_rounds
+    loop do
+      deck = Deck.new
+      play_round(deck) until deck.size < 10
+      break unless reshuffle?
+    end
+  end
+
+  def play_round(deck)
+    deal_cards(deck)
+    player.display_cards
+    dealer.display_cards
+    player.turn(deck)
+    dealer.turn(deck) unless player.busted?
+    dealer.display_all_cards
+    determine_result
+    show_result
+    discard
+  end
+
   def deal_cards(deck)
     @winner = 'Nobody'
     2.times do
       player.hand << Card.new(deck.deal)
       dealer.hand << Card.new(deck.deal)
     end
-    player.find_aces
-    dealer.find_aces
+    player.assign_aces
+    dealer.assign_aces
   end
 
   def determine_result
-    if player.busted?
-      if !dealer.busted?
-        @winner = dealer
-      end
-    elsif player.twenty_one?
-      if !dealer.twenty_one?
-        @winner = player
-      end
+    if player.busted? && !dealer.busted?
+      @winner = dealer
+    elsif player.twenty_one? && !dealer.twenty_one?
+      @winner = player
     elsif dealer.busted?
       @winner = player
     elsif dealer.twenty_one?
       @winner = dealer
-    else
-      @winner = dealer if dealer > player
-      @winner = player if player > dealer
+    elsif dealer > player
+      @winner = dealer
+    elsif player > dealer
+      @winner = player
     end
   end
 
@@ -283,7 +285,7 @@ class Game
   def reshuffle?
     puts "You are almost out of cards. Do you want to reshuffle the deck and"
     puts "continue playing?"
-    return true if gets.chomp.downcase.start_with?('y')
+    gets.chomp.downcase.start_with?('y')
   end
 
   def goodbye_message
